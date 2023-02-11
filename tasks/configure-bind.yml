@@ -1,0 +1,96 @@
+---
+# tasks - configure-bind.yml for nerve4-bind
+
+- name: Upload named.conf on Primary Rhel/Rocky
+  become: yes
+  ansible.builtin.template:
+    src: rhel-named-p.conf.j2
+    dest: /etc/named/named.conf
+    mode: '0640'
+  when:
+    (primary_var is defined and primary_var and ansible_distribution in "CentOS") or
+    (primary_var is defined and primary_var and ansible_distribution in "RedHat") or
+    (primary_var is defined and primary_var and ansible_distribution in "Rocky")
+
+- name: Upload named.conf.local on Primary Rhel/Rocky
+  become: yes
+  ansible.builtin.template:
+    src: rhel-named-clp.j2
+    dest: /etc/named/named.conf.local
+    mode: '0640'
+  when:
+    (primary_var is defined and primary_var and ansible_distribution in "CentOS") or
+    (primary_var is defined and primary_var and ansible_distribution in "RedHat") or
+    (primary_var is defined and primary_var and ansible_distribution in "Rocky")
+
+- name: Make sure ..zones directory is exists
+  become: yes
+  become_method: sudo
+  ansible.builtin.file:
+    path: /etc/named/zones
+    state: directory
+    mode: '0640'
+
+- name: Upload zone db.{{ subdomain }}.{{ domain }}.{{ tld }} on Primary Rhel/Rocky
+  become: yes
+  ansible.builtin.template:
+    src: rhel-zone.j2
+    dest: "/etc/named/zones/db.{{ subdomain }}.{{ domain }}.{{ tld }}"
+    mode: '0640'
+  when:
+    (primary_var is defined and primary_var and ansible_distribution in "CentOS") or
+    (primary_var is defined and primary_var and ansible_distribution in "RedHat") or
+    (primary_var is defined and primary_var and ansible_distribution in "Rocky")
+
+- name: Run Config Check on Primary Rhel/Rocky
+  become: yes
+  ansible.builtin.shell: |
+    named-checkconf named.conf
+  args:
+    chdir: /etc/named
+  when:
+    (primary_var is defined and primary_var and ansible_distribution in "CentOS") or
+    (primary_var is defined and primary_var and ansible_distribution in "RedHat") or
+    (primary_var is defined and primary_var and ansible_distribution in "Rocky")
+
+- name: Upload named.conf on Worker Rhel/Rocky
+  become: yes
+  ansible.builtin.template:
+    src: rhel-named-s.conf.j2
+    dest: /etc/named/named.conf
+    mode: '0640'
+  when:
+    (worker_var is defined and worker_var and ansible_distribution in "CentOS") or
+    (worker_var is defined and worker_var and ansible_distribution in "RedHat") or
+    (worker_var is defined and worker_var and ansible_distribution in "Rocky")
+
+- name: Upload named.conf.local on Worker Rhel/Rocky
+  become: yes
+  ansible.builtin.template:
+    src: rhel-named-clw.j2
+    dest: /etc/named/named.conf.local
+    mode: '0640'
+  when:
+    (worker_var is defined and worker_var and ansible_distribution in "CentOS") or
+    (worker_var is defined and worker_var and ansible_distribution in "RedHat") or
+    (worker_var is defined and worker_var and ansible_distribution in "Rocky")
+
+- name: Run Config Check on Worker Rhel/Rocky
+  become: yes
+  ansible.builtin.shell: |
+    named-checkconf named.conf
+  args:
+    chdir: /etc/named
+  when:
+    (worker_var is defined and worker_var and ansible_distribution in "CentOS") or
+    (worker_var is defined and worker_var and ansible_distribution in "RedHat") or
+    (worker_var is defined and worker_var and ansible_distribution in "Rocky")
+
+- name: Enable and restart named service
+  ansible.builtin.systemd:
+    name: "named"
+    state: restarted
+    enabled: yes
+  when:
+    - primary_var is defined and primary_var
+    - worker_var is defined and worker_var
