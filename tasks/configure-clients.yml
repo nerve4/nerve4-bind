@@ -1,0 +1,38 @@
+---
+# tasks - configure-clients.yml for nerve4-bind
+
+- name: Upload resolve.conf on Rhel/Rocky Clients
+  become: yes
+  ansible.builtin.template:
+    src: resolv.j2
+    dest: /etc/resolv.conf
+    mode: '0644'
+  when:
+    (client_var is defined and client_var and ansible_distribution in "CentOS") or
+    (client_var is defined and client_var and ansible_distribution in "RedHat") or
+    (client_var is defined and client_var and ansible_distribution in "Rocky")
+
+- name: Install resolvconf on Ubuntu Clients
+  ansible.builtin.apt:
+    pkg: "{{ ubuntu_clnt }}"
+  when:
+    - ansible_distribution == "Ubuntu"
+    - client_var is defined and client_var
+
+- name: Upload resolve.conf on Clients Ubuntu
+  become: yes
+  ansible.builtin.template:
+    src: resolv.j2
+    dest: /etc/resolvconf/resolv.conf.d/head
+    mode: '0644'
+  when:
+    - ansible_distribution == "Ubuntu"
+    - client_var is defined and client_var
+
+- name: Generate a new resolv.conf file
+  become: yes
+  ansible.builtin.shell: |
+    resolvconf -u
+  when:
+    - ansible_distribution == "Ubuntu"
+    - client_var is defined and client_var

@@ -1,0 +1,17 @@
+---
+# tasks - main.yml for nerve4-bind
+
+- include: rhel-install-bind.yml
+  when: 
+    (ansible_distribution == "CentOS") or
+    (ansible_distribution == "RedHat") or
+    (ansible_distribution in "Rocky")
+
+- include: configure-bind.yml
+  when:
+    (primary_var is defined and primary_var) or
+    (worker_var is defined and worker_var)
+
+- include: configure-clients.yml
+  when:
+    - client_var is defined and client_var
